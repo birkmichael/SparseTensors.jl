@@ -1,0 +1,7 @@
+name = "SparseTensor"
+uuid = "6fc64a2b-3d51-4b7d-861b-4cf5753bad24"
+authors = ["birkmichael <birkmichael@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
