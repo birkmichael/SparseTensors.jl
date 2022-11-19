@@ -80,26 +80,31 @@ function ptrace(A::SparseTensor{Tv,Ti},ind::Integer) where {Ti,Tv}
     n = length(remainingTerms)
     newIs = deepcopy(A.is[remainingTerms])
     newVs = deepcopy(A.vs[remainingTerms])
-    newDims = reduce(vcat,collect.([1:(ind-1),(ind+1):length(shape)]))
-    newShape = A.shape(newDims)
+    newDims = reduce(vcat,collect.([1:(ind-1),(ind+1):length(A.shape)]))
+    newShape = A.shape[newDims]
     
     for i ∈ 1:n
         for j ∈ 1:2
         newIs[i][j] = newIs[i][j][newDims]
         end
     end
-    uniqueSet = Dict{eltype(newIs),Vector{Ti}}
-    for i ∈ 1:n
-        if newIs[i] ∈ uniqueSet.keys
-            push!(uniqueSet[newIs[i]],i)
+    
+    II = sortperm(newIs)
+    newIs = newIs[II]
+    newVs = newVs[II]
+    indVec = Vector{Vector{Ti}}([[1]])
+    k=1
+    for i ∈ 2:n
+        if newIs[i]==newIs[k]
+            append!(indVec[k],i)
         else
-            uniqueSet[newIs] = [i]
+            k+=1
+            append!(indVec,[[i]])
         end
     end
-
-    inds = [vals for vals ∈ values(uniqueSet)] # Done so I don't have to worry about whether dictionaries return values in the same order each time.
-    newIs = newIs[[inds[:][1]]]
-    newVs = [sum(newVs[i]) for i ∈ inds]
+    
+    newIs = [newIs[indVec[i][1]] for i ∈ eachindex(indVec) ]
+    newVs = [sum(newVs[indVec[i]]) for i ∈ eachindex(indVec)]
 
     if length(A.shape)==1
         @warn "Partial trace over a single dimension is a full trace, return result is a scalar"
@@ -134,7 +139,9 @@ function eigenvalues(A::SparseTensor{Tv,Ti}) where {Ti,Tv} #throws away all rows
     end
     n = maximum([length(uniqueIs),length(uniqueJs)])
     Mat = zeros(Tv,n,n)
-    Mat[Is,Js] .= A.vs
+    for i ∈ eachindex(Is)
+        Mat[Is[i],Js[i]] = A.vs[i]
+    end
     return eigvals(Mat)
 end
 end
